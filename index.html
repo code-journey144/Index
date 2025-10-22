@@ -1,0 +1,653 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>QuizPlay — Smooth Pro Quiz</title>
+<style>
+  :root{
+    --bg:#0f1724;
+    --card:#0b1220;
+    --muted:#98a0b3;
+    --accent:#6ee7b7;
+    --accent-2:#60a5fa;
+    --glass: rgba(255,255,255,0.04);
+    --success: #10b981;
+    --danger: #ef4444;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial;color:#e6eef8;background:
+    linear-gradient(180deg,#071025 0%, #081322 60%);-webkit-font-smoothing:antialiased}
+  .wrap{max-width:980px;margin:32px auto;padding:24px}
+  header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;gap:12px}
+  .brand{display:flex;align-items:center;gap:12px}
+  .logo{
+    width:54px;height:54px;border-radius:12px;display:flex;align-items:center;justify-content:center;
+    background:linear-gradient(135deg,var(--accent-2),var(--accent));box-shadow:0 6px 18px rgba(100,120,200,0.12);
+    color:#03203b;font-weight:700;font-size:20px;
+  }
+  h1{margin:0;font-size:18px;color:#eaf6ff}
+  .controls{display:flex;gap:10px;align-items:center}
+  .btn{
+    background:var(--glass);border:1px solid rgba(255,255,255,0.06);padding:10px 14px;border-radius:10px;color:#d9eefc;
+    cursor:pointer;font-weight:600;backdrop-filter: blur(6px);transition:all .18s ease;
+  }
+  .btn:hover{transform:translateY(-3px);box-shadow:0 12px 30px rgba(2,6,23,.45)}
+  .btn.primary{
+    background:linear-gradient(90deg,var(--accent),var(--accent-2));color:#042433;border:none;
+    box-shadow:0 8px 24px rgba(96,165,250,0.12);
+  }
+  .status{display:flex;gap:10px;align-items:center;color:var(--muted);font-weight:600}
+  main.card{
+    background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+    border-radius:14px;padding:20px;border:1px solid rgba(255,255,255,0.03);box-shadow:0 10px 40px rgba(2,6,23,.6)
+  }
+  .topbar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px}
+  .progress{
+    height:12px;background:rgba(255,255,255,0.03);border-radius:999px;overflow:hidden;flex:1;margin-left:10px;
+    box-shadow:inset 0 -3px 10px rgba(0,0,0,0.4);
+  }
+  .progress > i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent-2));width:0%;transition:width .35s ease}
+  .question-area{display:grid;grid-template-columns: 1fr;gap:18px;align-items:start}
+  .qcard{background:rgba(255,255,255,0.02);padding:18px;border-radius:12px;border:1px solid rgba(255,255,255,0.03)}
+  .qnum{color:var(--muted);font-size:13px;margin-bottom:6px}
+  .qtext{font-size:20px;color:#e6f7ff;line-height:1.35}
+  .choices{display:grid;gap:10px;margin-top:14px}
+  .choice{
+    background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.005));
+    border-radius:12px;padding:12px 14px;border:1px solid rgba(255,255,255,0.03);
+    cursor:pointer;display:flex;align-items:center;gap:12px;transition:all .18s;user-select:none;
+  }
+  .choice:hover{transform:translateY(-4px);box-shadow:0 10px 24px rgba(2,6,23,.5)}
+  .choice .lbl{font-weight:700;color:#eaf6ff}
+  .choice .desc{color:var(--muted);font-size:14px}
+  .choice.correct{border-color:rgba(16,185,129,0.18);background:linear-gradient(90deg, rgba(16,185,129,0.06), rgba(96,165,250,0.02))}
+  .choice.wrong{border-color:rgba(239,68,68,0.14);background:linear-gradient(90deg, rgba(239,68,68,0.04), rgba(255,255,255,0.01))}
+  .meta{display:flex;align-items:center;gap:12px;margin-top:12px}
+  .meta .small{color:var(--muted);font-weight:700}
+  .footer{display:flex;justify-content:space-between;align-items:center;margin-top:18px;gap:12px}
+  .ghost{background:transparent;border:1px dashed rgba(255,255,255,0.03);padding:10px 12px;border-radius:10px;color:var(--muted)}
+  .pill{padding:8px 12px;border-radius:999px;background:rgba(255,255,255,0.02);color:var(--muted);font-weight:700}
+  /* modal */
+  .modal-back{position:fixed;inset:0;background:linear-gradient(180deg, rgba(0,0,0,0.6), rgba(2,6,23,0.6));display:none;align-items:center;justify-content:center;padding:20px;z-index:80}
+  .modal{width:100%;max-width:720px;background:#071428;border-radius:14px;padding:22px;border:1px solid rgba(255,255,255,0.03);box-shadow:0 30px 80px rgba(2,6,23,.8)}
+  .stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:14px}
+  .stat{background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.008));padding:14px;border-radius:10px;text-align:center}
+  .stat h3{margin:0;color:var(--accent);font-size:20px}
+  .stat p{margin:6px 0 0;color:var(--muted);font-weight:700}
+  .close{margin-left:12px;background:transparent;border:none;color:var(--muted);font-weight:800;cursor:pointer}
+  .badge{display:inline-block;padding:6px 10px;border-radius:999px;background:rgba(255,255,255,0.02);font-weight:800;color:var(--muted)}
+  /* responsive */
+  @media (max-width:720px){
+    .stat-grid{grid-template-columns:repeat(1,1fr)}
+    .brand h1{font-size:16px}
+  }
+  /* subtle animation when feedback shown */
+  .feedback{
+    margin-top:8px;padding:10px;border-radius:10px;font-weight:700;display:inline-block;
+    animation:pop .35s ease;
+  }
+  .feedback.correct{background:rgba(16,185,129,0.09);color:var(--success);border:1px solid rgba(16,185,129,0.12)}
+  .feedback.wrong{background:rgba(239,68,68,0.06);color:var(--danger);border:1px solid rgba(239,68,68,0.09)}
+  @keyframes pop{0%{transform:scale(.96);opacity:0}100%{transform:scale(1);opacity:1}}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="brand">
+        <div class="logo">Q</div>
+        <div>
+          <h1>QuizPlay — Pro Smooth</h1>
+          <div style="color:var(--muted);font-size:13px">Practice quiz • math & geometry • sourced from your images</div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <div class="status"><span class="badge" id="scoreBadge">Score: 0</span></div>
+        <button class="btn" id="btnReset" title="Restart">Reset</button>
+        <button class="btn" id="btnDone" title="Finish game">Done Game</button>
+        <button class="btn primary" id="btnPlay">Play Game</button>
+      </div>
+    </header>
+
+    <main class="card">
+      <div class="topbar">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div class="pill" id="qProgress">Question 0 / 0</div>
+          <div class="qnum" id="timeElapsed">Time: 00:00</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div class="small" style="color:var(--muted)">Accuracy</div>
+          <div style="width:140px">
+            <div class="progress" aria-hidden><i id="progressBar"></i></div>
+          </div>
+        </div>
+      </div>
+
+      <section class="question-area">
+        <div class="qcard" id="startCard">
+          <div style="display:flex;align-items:center;gap:16px">
+            <div style="font-size:42px;color:var(--accent)">♪</div>
+            <div>
+              <div style="font-weight:800;color:#eaf6ff;font-size:18px">Ready to play?</div>
+              <div style="color:var(--muted);margin-top:6px">Press <strong>Play Game</strong> to begin. Questions are randomized and choices are shuffled.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="qcard" id="qCard" style="display:none">
+          <div class="qnum" id="qnum">Question</div>
+          <div class="qtext" id="qtext">What is ...</div>
+
+          <div class="choices" id="choices"></div>
+
+          <div class="meta">
+            <div class="small">Correct: <span id="correctCount">0</span></div>
+            <div class="small">Wrong: <span id="wrongCount">0</span></div>
+            <div class="small">Time per quiz: <span id="timePer">0s</span></div>
+            <div style="flex:1"></div>
+            <div id="feedbackArea"></div>
+          </div>
+
+          <div class="footer">
+            <div style="display:flex;gap:8px">
+              <button class="btn ghost" id="btnSkip">Skip</button>
+              <button class="btn" id="btnNext" disabled>Next</button>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <div style="color:var(--muted);font-weight:700">Progress</div>
+              <div style="width:180px"><div class="progress" aria-hidden><i id="innerProgress" style="width:0%"></i></div></div>
+            </div>
+          </div>
+        </div>
+
+      </section>
+    </main>
+  </div>
+
+  <!-- modal -->
+  <div class="modal-back" id="modal">
+    <div class="modal" role="dialog" aria-modal="true">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+        <div>
+          <h2 style="margin:0;color:#eaf6ff">Game Summary</h2>
+          <div style="color:var(--muted);margin-top:6px">Overview of your performance</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <button class="close" id="closeModal">Close</button>
+        </div>
+      </div>
+
+      <div class="stat-grid" id="summaryStats">
+        <div class="stat">
+          <h3 id="sumScore">0 / 0</h3>
+          <p>Total Correct / Total</p>
+        </div>
+        <div class="stat">
+          <h3 id="sumAcc">0%</h3>
+          <p>Accuracy</p>
+        </div>
+        <div class="stat">
+          <h3 id="sumTime">0s</h3>
+          <p>Time Spent</p>
+        </div>
+      </div>
+
+      <div style="margin-top:14px">
+        <div style="font-weight:800;color:var(--muted)">Details</div>
+        <div id="breakdown" style="margin-top:8px"></div>
+      </div>
+    </div>
+  </div>
+
+<script>
+/*
+  QuizPlay — single-file app
+  - Questions: sourced from user's images (math)
+  - Features: shuffled questions & choices, Play, Done, Reset, summary modal
+*/
+
+// ---------- QUESTIONS ----------
+const QUESTIONS = [
+  {
+    q: "The volume of a triangular pyramid is 84 m³. If the base area is 14 m², find its height.",
+    choices: ["12 m","14 m","16 m","18 m"],
+    answerIndex: 3
+  },
+  {
+    q: "A decorative triangular glass pyramid has a base area of 24 cm² and a height of 9 cm. What is its volume?",
+    choices: ["54 cm³","72 cm³","108 cm³","216 cm³"],
+    answerIndex: 1
+  },
+  {
+    q: "An Egyptian pyramid replica has a pentagonal base with an area of 60 m² and a height of 15 m. What is its volume?",
+    choices: ["200 m³","250 m³","300 m³","900 m³"],
+    answerIndex: 2
+  },
+  {
+    q: "The volume of a cone is how many times smaller than the volume of a cylinder with the same base and height?",
+    choices: ["Twice","One-half","One-third","The same"],
+    answerIndex: 2
+  },
+  {
+    q: "Which formula represents the volume of a cone?",
+    choices: ["V = π r² h","V = 1/2 π r² h","V = 1/3 π r² h","V = 4/3 π r³"],
+    answerIndex: 2
+  },
+  {
+    q: "Find the volume of a cone with a radius of 3 cm and a height of 9 cm.",
+    choices: ["84.78 cm³","84.82 cm³","75.36 cm³","101.52 cm³"],
+    // 1/3 * π * 3^2 * 9 = 27π ≈ 84.823
+    answerIndex: 1
+  },
+  {
+    q: "Find the volume of a sphere with a radius of 4 cm.",
+    choices: ["201.06 cm³","268.08 cm³","335.10 cm³","402.12 cm³"],
+    // 4/3 π 64 = 256/3 π ≈ 268.082...
+    answerIndex: 1
+  },
+  {
+    q: "Which of the following best describes the volume of any pyramid?",
+    choices: [
+      "Equal to the volume of a prism with the same base and height",
+      "One-half the volume of a prism with the same base and height",
+      "One-third the volume of a prism with the same base and height",
+      "Twice the volume of a prism with the same base and height"
+    ],
+    answerIndex: 2
+  },
+  {
+    q: "The formula for finding the volume of a triangular pyramid is:",
+    choices: ["V = 1/2 B h","V = 1/3 B h","V = B h","V = 2/3 B h"],
+    answerIndex: 1
+  },
+  {
+    q: "What happens to the volume of a pyramid if its height is doubled and the base area stays the same?",
+    choices: ["The volume doubles.","The volume becomes one-third.","The volume stays the same.","The volume is halved."],
+    answerIndex: 0
+  },
+  {
+    q: "What is the formula for finding the distance between two points (x1, y1) and (x2, y2)?",
+    choices: [
+      "D = √((x2 - x1)² + (y2 - y1)²)",
+      "D = ((x1 + x2)/2, (y1 + y2)/2)",
+      "D = (x2 - x1) + (y2 - y1)",
+      "D = (x1 - y1) + (x2 - y2)"
+    ],
+    answerIndex: 0
+  },
+  {
+    q: "What is the distance between the points (2, 3) and (5, 7)?",
+    choices: ["3","4","5","6"],
+    // sqrt(9+16)=sqrt25=5
+    answerIndex: 2
+  },
+  {
+    q: "Which of the following correctly describes the Cartesian Coordinate Plane?",
+    choices: [
+      "A number line used only for positive numbers",
+      "A plane divided into four quadrants by a horizontal and vertical number line",
+      "A flat surface divided by one vertical line only",
+      "A graph used only for plotting angles"
+    ],
+    answerIndex: 1
+  },
+  {
+    q: "What do we call the point where the x-axis and y-axis intersect in the Cartesian plane?",
+    choices: ["Quadrant","Slope","Origin","Axis"],
+    answerIndex: 2
+  },
+  {
+    q: "Which of the following is TRUE about the Cartesian coordinate plane?",
+    choices: [
+      "It is divided into two quadrants.",
+      "The horizontal axis is called the y-axis.",
+      "It is formed by two perpendicular number lines.",
+      "The origin is always at (1,1)."
+    ],
+    answerIndex: 2
+  },
+  {
+    q: "A vendor bought 50 mangoes at ₱15 each and sold all for ₱20 each. How much profit did the vendor earn in total?",
+    choices: ["₱150","₱200","₱250","₱300"],
+    // profit per mango 5 * 50 = 250
+    answerIndex: 2
+  },
+  {
+    q: "Which is the best buy for a can of juice?",
+    choices: ["250 mL for ₱25","500 mL for ₱45","1,000 mL for ₱90","1,000 mL for ₱120"],
+    // cheapest per mL = either 500 for45 or 1000 for90 => both 0.09, choose 500mL for45 per original choices expected B
+    answerIndex: 1
+  },
+  {
+    q: "A cellphone costs ₱12,000 in cash. Under an instalment plan, the buyer pays ₱3,000 down payment and ₱1,000 monthly for 10 months. What is the total amount paid under the instalment plan?",
+    choices: ["₱12,000","₱13,000","₱14,000","₱15,000"],
+    // 3000 + 1000*10 = 13000
+    answerIndex: 1
+  },
+  {
+    q: "If two sides of a triangle measure 7 cm and 12 cm, what could be the length of the third side?",
+    choices: ["3 cm","5 cm","10 cm","20 cm"],
+    // third must be >5 and <19, so 10 fits
+    answerIndex: 2
+  },
+  {
+    q: "Which of the following side lengths cannot form a triangle?",
+    choices: ["6 cm, 7 cm, 10 cm","4 cm, 4 cm, 8 cm","5 cm, 5 cm, 9 cm","3 cm, 5 cm, 7 cm"],
+    // 4,4,8 is degenerate -> cannot
+    answerIndex: 1
+  },
+  {
+    q: "Which statement is TRUE about the relationship between the sides and angles of a triangle?",
+    choices: [
+      "The longest side is opposite the smallest angle.",
+      "The smallest side is opposite the largest angle.",
+      "The longest side is opposite the largest angle.",
+      "All sides are always equal in any triangle."
+    ],
+    answerIndex: 2
+  },
+  {
+    q: "A triangle has sides measuring 8 cm, 15 cm, and 17 cm. Which angle is the largest?",
+    choices: [
+      "The angle opposite the 8 cm side",
+      "The angle opposite the 15 cm side",
+      "The angle opposite the 17 cm side",
+      "All angles are equal"
+    ],
+    answerIndex: 2
+  },
+  {
+    q: "If two angles of a triangle measure 45° and 75°, which side is the longest?",
+    choices: [
+      "The side opposite the 45° angle",
+      "The side opposite the 75° angle",
+      "The side opposite the remaining angle",
+      "All sides are equal"
+    ],
+    answerIndex: 1
+  },
+  {
+    q: "What is the formula of the Pythagorean Theorem?",
+    choices: ["a² + b² = c","a + b = c²","a² + b² = c²","a² - b² = c²"],
+    answerIndex: 2
+  },
+  {
+    q: "In a right triangle, if one leg is 6 cm and the other leg is 8 cm, what is the length of the hypotenuse?",
+    choices: ["10 cm","12 cm","14 cm","16 cm"],
+    answerIndex: 0
+  },
+  {
+    q: "The hypotenuse of a right triangle measures 13 cm and one leg measures 5 cm. Find the length of the other leg.",
+    choices: ["10 cm","11 cm","12 cm","14 cm"],
+    answerIndex: 2
+  },
+  {
+    q: "A ladder 15 ft long rests against a wall. The bottom is 9 ft away from the wall. How high does the ladder reach on the wall?",
+    choices: ["10 ft","11 ft","12 ft","13 ft"],
+    answerIndex: 2
+  }
+];
+
+// ---------- UTILS ----------
+function shuffleArray(a){
+  for(let i=a.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [a[i],a[j]]=[a[j],a[i]];
+  }
+  return a;
+}
+function formatTime(s){
+  const mm = String(Math.floor(s/60)).padStart(2,'0');
+  const ss = String(s%60).padStart(2,'0');
+  return `${mm}:${ss}`;
+}
+
+// ---------- APP STATE ----------
+let pool = []; // shuffled questions
+let currentIndex = -1;
+let correct = 0;
+let wrong = 0;
+let started = false;
+let quizStartTs = null;
+let timerInterval = null;
+let elapsed = 0;
+let perQuestionTimes = [];
+let chosenAnswers = []; // for breakdown
+
+// ---------- DOM ----------
+const btnPlay = document.getElementById('btnPlay');
+const btnDone = document.getElementById('btnDone');
+const btnReset = document.getElementById('btnReset');
+const qCard = document.getElementById('qCard');
+const startCard = document.getElementById('startCard');
+const qnum = document.getElementById('qnum');
+const qtext = document.getElementById('qtext');
+const choicesEl = document.getElementById('choices');
+const correctCount = document.getElementById('correctCount');
+const wrongCount = document.getElementById('wrongCount');
+const scoreBadge = document.getElementById('scoreBadge');
+const btnNext = document.getElementById('btnNext');
+const btnSkip = document.getElementById('btnSkip');
+const progressBar = document.getElementById('progressBar');
+const innerProgress = document.getElementById('innerProgress');
+const qProgress = document.getElementById('qProgress');
+const timeElapsed = document.getElementById('timeElapsed');
+const feedbackArea = document.getElementById('feedbackArea');
+
+const modal = document.getElementById('modal');
+const closeModal = document.getElementById('closeModal');
+const sumScore = document.getElementById('sumScore');
+const sumAcc = document.getElementById('sumAcc');
+const sumTime = document.getElementById('sumTime');
+const breakdown = document.getElementById('breakdown');
+
+// ---------- LOGIC ----------
+function startGame(){
+  // reset
+  correct = 0; wrong = 0; currentIndex = -1; started = true;
+  perQuestionTimes = []; chosenAnswers = [];
+  elapsed = 0;
+  quizStartTs = Date.now();
+  // create pool copy and shuffle questions and choices
+  pool = JSON.parse(JSON.stringify(QUESTIONS));
+  shuffleArray(pool);
+  pool.forEach(q=>{
+    // attach choices shuffled but keep track of correct index
+    const originalChoices = q.choices.slice();
+    const idx = q.answerIndex;
+    const correctChoice = originalChoices[idx];
+    const shuffled = shuffleArray(q.choices.slice());
+    q._shuffled = shuffled;
+    q._answerText = correctChoice;
+    q._shuffledAnswerIndex = shuffled.findIndex(x=>x===correctChoice);
+  });
+  // start timer
+  if(timerInterval) clearInterval(timerInterval);
+  timerInterval = setInterval(()=>{ elapsed++; timeElapsed.innerText = "Time: " + formatTime(elapsed); },1000);
+  startCard.style.display='none';
+  qCard.style.display='block';
+  document.getElementById('btnPlay').innerText = 'Restart';
+  nextQuestion();
+  updateUI();
+}
+
+function updateUI(){
+  scoreBadge.innerText = `Score: ${correct}`;
+  correctCount.innerText = correct;
+  wrongCount.innerText = wrong;
+  const total = pool.length;
+  qProgress.innerText = `Question ${Math.max(0,currentIndex+1)} / ${total}`;
+  const acc = total===0?0:Math.round((correct/(correct+wrong||1))*100);
+  progressBar.style.width = acc + '%';
+  innerProgress.style.width = (total===0?0:Math.round(((currentIndex+1)/total)*100)) + '%';
+}
+
+function nextQuestion(){
+  feedbackArea.innerHTML = '';
+  btnNext.disabled = true;
+  currentIndex++;
+  if(currentIndex >= pool.length){
+    // finish
+    finishGame();
+    return;
+  }
+  renderQuestion(pool[currentIndex]);
+  updateUI();
+}
+
+function renderQuestion(item){
+  qnum.innerText = `Question ${currentIndex+1} / ${pool.length}`;
+  qtext.innerText = item.q;
+  choicesEl.innerHTML = '';
+  // show choices exactly like text but shuffled earlier
+  item._shuffled.forEach((c,i)=>{
+    const div = document.createElement('div');
+    div.className = 'choice';
+    div.dataset.index = i;
+    div.innerHTML = `<div style="width:36px;height:36px;border-radius:8px;background:rgba(255,255,255,0.02);display:flex;align-items:center;justify-content:center;font-weight:800;color:var(--muted)">${String.fromCharCode(65+i)}</div>
+                     <div style="flex:1">
+                       <div class="lbl">${c}</div>
+                     </div>`;
+    div.addEventListener('click', ()=>onPick(div, item, i));
+    choicesEl.appendChild(div);
+  });
+  // mark question start time
+  item._tsStart = Date.now();
+}
+
+function onPick(div, item, pickedIndex){
+  // prevent multiple picks
+  if(div.classList.contains('disabled')) return;
+  // disable all choices
+  const elems = choicesEl.querySelectorAll('.choice');
+  elems.forEach(e=>e.classList.add('disabled'));
+  // compute correctness
+  const correctIdx = item._shuffledAnswerIndex;
+  const isCorrect = (pickedIndex === correctIdx);
+  if(isCorrect){
+    div.classList.add('correct');
+    correct++;
+    showFeedback(true, "Correct!");
+  } else {
+    div.classList.add('wrong');
+    // highlight correct
+    const correctEl = choicesEl.querySelector(`.choice[data-index="${correctIdx}"]`);
+    if(correctEl) correctEl.classList.add('correct');
+    wrong++;
+    showFeedback(false, `Wrong — correct: ${item._shuffled[correctIdx]}`);
+  }
+  // record time
+  const t = Math.round((Date.now() - item._tsStart)/1000);
+  perQuestionTimes.push(t);
+  chosenAnswers.push({ q: item.q, picked: item._shuffled[pickedIndex], correct: item._shuffled[correctIdx], correctBool: isCorrect, time: t });
+  btnNext.disabled = false;
+  updateUI();
+}
+
+function showFeedback(ok, txt){
+  feedbackArea.innerHTML = `<div class="feedback ${ok? 'correct':'wrong'}">${txt}</div>`;
+}
+
+function finishGame(){
+  started = false;
+  if(timerInterval) clearInterval(timerInterval);
+  // show summary modal
+  const total = pool.length;
+  const totalAnswered = correct + wrong;
+  const acc = totalAnswered===0 ? 0 : Math.round((correct/totalAnswered)*100);
+  sumScore.innerText = `${correct} / ${total}`;
+  sumAcc.innerText = `${acc}%`;
+  sumTime.innerText = formatTime(elapsed);
+  // breakdown
+  breakdown.innerHTML = '';
+  chosenAnswers.forEach((c,i)=>{
+    const el = document.createElement('div');
+    el.style.padding='10px';el.style.borderBottom='1px dashed rgba(255,255,255,0.03)';
+    el.innerHTML = `<div style="display:flex;justify-content:space-between;gap:10px">
+      <div style="flex:1"><div style="font-weight:800;color:#eaf6ff">${c.q}</div>
+      <div style="color:var(--muted);margin-top:6px"><strong>Your answer:</strong> ${c.picked} • <strong>Correct:</strong> ${c.correct}</div></div>
+      <div style="width:96px;text-align:right"><div style="font-weight:900;color:${c.correctBool? 'var(--accent)': 'var(--danger)'}">${c.correctBool? '✓':'✕'}</div><div style="color:var(--muted);margin-top:6px">${c.time}s</div></div>
+    </div>`;
+    breakdown.appendChild(el);
+  });
+  modal.style.display = 'flex';
+  updateUI();
+}
+
+function resetGame(){
+  if(timerInterval) clearInterval(timerInterval);
+  started=false; elapsed=0;
+  pool=[]; currentIndex=-1; correct=0; wrong=0;
+  perQuestionTimes=[]; chosenAnswers=[];
+  qCard.style.display='none'; startCard.style.display='block';
+  document.getElementById('btnPlay').innerText = 'Play Game';
+  timeElapsed.innerText = 'Time: 00:00';
+  progressBar.style.width = '0%';
+  innerProgress.style.width = '0%';
+  scoreBadge.innerText = 'Score: 0';
+  correctCount.innerText = '0'; wrongCount.innerText='0';
+}
+
+// ---------- EVENTS ----------
+btnPlay.addEventListener('click', ()=>{
+  if(started){
+    // confirm restart
+    if(confirm('Restart the game?')) startGame();
+  } else startGame();
+});
+btnNext.addEventListener('click', ()=> nextQuestion());
+btnSkip.addEventListener('click', ()=>{
+  // treat as wrong and move on
+  if(currentIndex<0 || currentIndex>=pool.length) return;
+  // simulate wrong pick and continue
+  const item = pool[currentIndex];
+  const correctIdx = item._shuffledAnswerIndex;
+  // mark correct choice visually then record as wrong
+  const correctEl = choicesEl.querySelector(`.choice[data-index="${correctIdx}"]`);
+  if(correctEl) correctEl.classList.add('correct');
+  wrong++;
+  const t = Math.round((Date.now() - (item._tsStart||Date.now()))/1000);
+  perQuestionTimes.push(t);
+  chosenAnswers.push({ q: item.q, picked: null, correct: item._shuffled[correctIdx], correctBool:false, time: t });
+  btnNext.disabled = false;
+  updateUI();
+});
+
+btnDone.addEventListener('click', ()=>{
+  if(!started){
+    modal.style.display = 'flex';
+    // still show empty summary
+    const total = pool.length||QUESTIONS.length;
+    sumScore.innerText = `${correct} / ${total}`;
+    sumAcc.innerText = `${total===0?0:Math.round((correct/(correct+wrong||1))*100)}%`;
+    sumTime.innerText = formatTime(elapsed);
+    breakdown.innerHTML = chosenAnswers.length? chosenAnswers.map(c=>`<div>${c.q}</div>`).join('') : '<div style="color:var(--muted)">No answers yet.</div>';
+    return;
+  }
+  if(confirm('Finish the game and view summary?')){
+    // if still playing, end and compute
+    finishGame();
+  }
+});
+
+btnReset.addEventListener('click', ()=> {
+  if(confirm('Reset everything?')) resetGame();
+});
+
+closeModal.addEventListener('click', ()=> {
+  modal.style.display='none';
+});
+
+// close modal when clicking outside
+modal.addEventListener('click', (e)=>{
+  if(e.target === modal) modal.style.display = 'none';
+});
+
+// initialize UI
+resetGame();
+updateUI();
+</script>
+</body>
+</html>
